@@ -757,7 +757,7 @@ class HUD(object):
 
     def publish_data(self, data):
         self.mq_client.publish("avsim/carla", json.dumps(data))
-        if (self.simulation_time >= 135.0 and self.simulation_time <= 135.5) and self.ring_bell:
+        if (self.simulation_time >= 134.0 and self.simulation_time <= 134.5) and self.ring_bell:
             self.ring_bell = False
             self.last_published_time = self.simulation_time
             msg = {'app':'avsim-manager', 'file':'collision_alert_1.mp3', 'volume':0.7}
