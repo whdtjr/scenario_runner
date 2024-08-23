@@ -749,7 +749,7 @@ class HUD(object):
         self.sim_start_time = None
         self._show_info = True
         self._info_text = []
-        self.ring_bell = True
+        self.ring_bell = False
         self._server_clock = pygame.time.Clock()
 
     def on_mqtt_connect(self, mqttc,obj,flags,rc):
@@ -757,11 +757,6 @@ class HUD(object):
 
     def publish_data(self, data):
         self.mq_client.publish("avsim/carla", json.dumps(data))
-        if (self.simulation_time >= 134.0 and self.simulation_time <= 134.5) and self.ring_bell:
-            self.ring_bell = False
-            self.last_published_time = self.simulation_time
-            msg = {'app':'avsim-manager', 'file':'collision_alert_1.mp3', 'volume':0.7}
-            self.mq_client.publish("flame/avsim/mixer/mapi_play", json.dumps(msg),1)
 
     def on_world_tick(self, timestamp):
         self._server_clock.tick()
@@ -771,7 +766,7 @@ class HUD(object):
 
     def average_collision(self, collision):
         if collision:
-            avg_collision = sum(collision) / len(collision)
+            avg_collision = 0.90
             max_col = max(1.0, max(collision))
 
             above_average_collision = [x/max_col for x in collision if x >= avg_collision]
@@ -886,6 +881,12 @@ class HUD(object):
             for d, vehicle in sorted(vehicles, key=lambda vehicles: vehicles[0]):
                 if d > 200.0:
                     break
+                if self.simulation_time >= 120:
+                    if d <= 20 and not self.ring_bell:
+                        self.ring_bell = True
+                        self.last_published_time = self.simulation_time
+                        msg = {'app':'avsim-manager', 'file':'collision_alert_1.mp3', 'volume':0.7}
+                        self.mq_client.publish("flame/avsim/mixer/mapi_play", json.dumps(msg),1)
                 vehicle_type = get_actor_display_name(vehicle, truncate=22)
                 self._info_text.append('% 4dm %s' % (d, vehicle_type))
 
@@ -1348,7 +1349,7 @@ def game_loop(args):
                 sim_world = client.get_world()
 
                 scenario_world = ScenarioWorld(client.get_world(), hud, args)
-                time.sleep(2) # load world properly
+                time.sleep(1) # load world properly
                 scenario_world.camera_manager.toggle_camera()
                 controller = KeyboardControl(scenario_world, args.autopilot)
                 if world is not None:
